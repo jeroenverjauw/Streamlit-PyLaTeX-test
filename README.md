@@ -1,6 +1,6 @@
 # Streamlit PyLaTeX
 
-Streamlit template project for new streamlit projects.
+Streamlit demo project to generate Latex Documents and PDFs on Streamlit Cloud.
 
 [![Streamlit](https://img.shields.io/badge/Go%20To-Streamlit%20Cloud-red?logo=streamlit)](https://streamlit.io/)
 
