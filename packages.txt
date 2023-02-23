@@ -1,1 +1,3 @@
 texlive
+texlive-pictures
+texlive-latex-extra
