@@ -1,6 +1,6 @@
 # Streamlit PyLaTeX
 
-[![Streamlit](https://img.shields.io/badge/Go%20To-Streamlit%20Cloud-red?logo=streamlit)](https://streamlit.io/)
+[![Streamlit](https://img.shields.io/badge/Go%20To-Streamlit%20Cloud-red?logo=streamlit)](https://franky1-streamlit-pylatex-streamlit-app-s0bmwi.streamlit.app/)
 
 Streamlit demo project to generate PDF from Latex Document.
 
