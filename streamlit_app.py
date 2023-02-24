@@ -177,7 +177,7 @@ def show_sidebar():
         st.image('resources/latex.png', width=260)
         st.header('About')
         st.markdown('''This app can convert **LaTeX** Documents to PDF.
-                    Not all LaTex files can be converted.
+                    Not all LaTeX files can be converted successfully.
                     References to other files are not supported.
                     Maybe some latex packages are missing.''')
         st.markdown('''Supported input file formats are:''')
@@ -255,7 +255,7 @@ if __name__ == "__main__":
             st.session_state['filename'] = 'sample2.tex'
             store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
     st.markdown('''---''')
-    col1, col2 = st.columns([1,1], gap='medium')
+    col1, col2 = st.columns([1,1], gap='large')
     with col1:
         if st.session_state.get('filename'):
             st.subheader(f'''Preview the LaTeX file "{st.session_state.get('filename')}"''')
