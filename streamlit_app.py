@@ -1,21 +1,32 @@
 import base64
 import re
 import shutil
-import sys
 import tempfile
 import uuid
 from datetime import datetime, timedelta
-from io import BytesIO
 from pathlib import Path
-from subprocess import run
-from zipfile import ZipFile
+from subprocess import run, PIPE
+# from zipfile import ZipFile
 
 import streamlit as st
-from streamlit_ace import st_ace
+# from streamlit_ace import st_ace
 
 from utils import latex
 
-sys.path.insert(0,'/usr/bin')
+
+class PdfLatexException(Exception):
+    """Exception raised for errors in the pdflatex execution.
+
+    Attributes:
+        stderr -- stderr which caused the error
+        message -- explanation of the error
+    """
+
+    def __init__(self, stderr, message="PdfLaTeX did not run successfully"):
+        self.salary = stderr
+        self.message = message
+        super().__init__(self.message)
+
 
 # set basic page config
 st.set_page_config(page_title="LaTeX to PDF Converter",
@@ -69,16 +80,17 @@ def make_tempdir() -> Path:
     return st.session_state['tempfiledir']
 
 
-def store_file_in_tempdir(tmpdirname: Path, uploaded_file: BytesIO) -> Path:
+def store_file_in_tempdir(tmpdirname: Path, filename:str, tex: str) -> Path:
     '''Store file in temp dir and return path to it
     params: tmpdirname: Path to temp dir
-            uploaded_file: BytesIO object
+            filename: str
+            tex: str
     returns: Path to stored file
     '''
     # store file in temp dir
-    tmpfile = tmpdirname.joinpath(uploaded_file.name)
-    with open(tmpfile, 'wb') as f:
-        f.write(uploaded_file.getbuffer())
+    tmpfile = tmpdirname.joinpath(filename)
+    with open(tmpfile, 'w') as f:
+        f.write(tex)
     return tmpfile
 
 
@@ -90,7 +102,7 @@ def get_base64_encoded_bytes(file_bytes) -> str:
 
 @st.cache_data(show_spinner=False)
 def show_pdf_base64(base64_pdf):
-    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="1000px" type="application/pdf"></iframe>'
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="1200px" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
 
 
@@ -133,6 +145,18 @@ def get_bytes_from_file(file_path: Path) -> bytes:
     return file_bytes
 
 
+@st.cache_data(show_spinner=False)
+def get_base64_encoded_bytes(file_bytes) -> str:
+    base64_encoded = base64.b64encode(file_bytes).decode('utf-8')
+    return base64_encoded
+
+
+@st.cache_data(show_spinner=False)
+def show_pdf_base64(base64_pdf):
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="1000px" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
+
+
 def check_if_file_with_same_name_and_hash_exists(tempfiledir: Path, file_name: str, hashval: int) -> bool:
     """Check if file with same name and hash already exists in tempdir
     params: tempfiledir: Path to file
@@ -152,13 +176,15 @@ def show_sidebar():
     with st.sidebar:
         st.image('resources/latex.png', width=260)
         st.header('About')
-        st.markdown('''This app can convert **LaTeX** Documents to PDF.''')
+        st.markdown('''This app can convert **LaTeX** Documents to PDF.
+                    Not all LaTex files can be converted.
+                    References to other files are not supported.
+                    Maybe some latex packages are missing.''')
         st.markdown('''Supported input file formats are:''')
         st.markdown('''- `tex`''')
         st.markdown('''---''')
         st.subheader('Versions')
         st.markdown(get_versions(), unsafe_allow_html=True)
-        # st.info(get_pdflatex_path())
         st.markdown('''---''')
         st.subheader('GitHub')
         st.markdown('''<https://github.com/Franky1/Streamlit-PyLaTeX>''')
@@ -166,70 +192,97 @@ def show_sidebar():
 
 def new_file_uploaded():
     if st.session_state.get('upload') is not None:
-        st.session_state['rawdata'] = st.session_state['upload'].read().decode('utf-8')
+        st.session_state['texdata'] = st.session_state['upload'].read().decode('utf-8')
+        st.session_state['filename'] = st.session_state['upload'].name
+        store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
+
+
+def convert_tex_to_pdf_native(tex_file: str, output_dir: Path=Path("."), timeout: int=60):
+    """Converts a tex file to pdf using pdflatex.
+    Calls pdflatex directly.
+    params: tex_file: str name to tex file
+            output_dir: Path to output dir
+            timeout: timeout for subprocess in seconds
+    returns: (output, exception)
+            output: Path to converted file
+            exception: Exception if conversion failed
+    """
+    filepath = None
+    exception = None
+    stdout = None
+    try:
+        process = run(args=['pdflatex', '-interaction=nonstopmode', '-output-format=pdf', f'-output-directory={output_dir.resolve()}', tex_file],
+            stdout=PIPE, stderr=PIPE, cwd=output_dir,
+            timeout=timeout, text=True)
+        stdout = process.stdout
+        re_filename = re.search('Output written on (.*?pdf) ', stdout)
+        re_fatal = re.search('.* (Fatal error occurred, no output PDF file produced)', stdout)
+        if re_filename is not None:
+            filepath = Path(re_filename[1]).resolve()
+        elif re_fatal is not None:
+            raise PdfLatexException(re_fatal[1])
+        else:
+            raise PdfLatexException('Unknown error')
+    except Exception as e:
+        exception = e
+    return (filepath, exception, stdout)
 
 
 if __name__ == "__main__":
-    if st.session_state.get('rawdata') is None:
-        st.session_state['rawdata'] = ''
-    if st.session_state.get('content') is None:
-        st.session_state['content'] = ''
+    if st.session_state.get('texdata') is None:
+        st.session_state['texdata'] = ''
     cleanup_tempdir()  # cleanup temp dir from previous user sessions
     tmpdirname = make_tempdir()  # make temp dir for each user session
+    if st.session_state.get('tempfiledir') is None:
+        st.session_state['tempfiledir'] = tmpdirname
     show_sidebar()
     st.title('LaTeX to PDF Converter 📄')
     hcol1, hcol2 = st.columns([1,1], gap='large')
     with hcol1:
-        st.file_uploader('Upload your LaTeX file', type=['tex'], on_change=new_file_uploaded, key='upload')
+        st.file_uploader('Upload your own LaTeX file', type=['tex'], on_change=new_file_uploaded, key='upload')
     with hcol2:
-        if st.button('Generate example LaTex file', key='example'):
+        if st.button('Generate example LaTex file with pylatex', key='example'):
             document = latex.make_doc()
-            st.session_state['rawdata'] = latex.get_tex(document)
-        if st.button('Load sample1 LaTex file', key='sample1'):
-            st.session_state['rawdata'] = get_bytes_from_file(Path('samples').joinpath('sample1.tex')).decode('utf-8')
-        if st.button('Load sample2 LaTex file', key='sample2'):
-            st.session_state['rawdata'] = get_bytes_from_file(Path('samples').joinpath('sample2.tex')).decode('utf-8')
+            st.session_state['texdata'] = latex.get_tex(document)
+            st.session_state['filename'] = 'example.tex'
+            store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
+        if st.button('Load "sample1.tex" LaTex file', key='sample1'):
+            st.session_state['texdata'] = get_bytes_from_file(Path('samples').joinpath('sample1.tex')).decode('utf-8')
+            st.session_state['filename'] = 'sample1.tex'
+            store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
+        if st.button('Load "sample2.tex" LaTex file', key='sample2'):
+            st.session_state['texdata'] = get_bytes_from_file(Path('samples').joinpath('sample2.tex')).decode('utf-8')
+            st.session_state['filename'] = 'sample2.tex'
+            store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
     st.markdown('''---''')
-    col1, col2 = st.columns([3,2], gap='medium')
+    col1, col2 = st.columns([1,1], gap='medium')
     with col1:
-        st.subheader('Preview the LaTeX file')
-        # FIXME: Ace Editor cannot be updated
+        filename = st.session_state.get('filename', '')
+        st.subheader(f'Preview the LaTeX file "{filename}"')
+        st.code(body=st.session_state.get('texdata'), language='latex')
+        # FIXME: Ace Editor does not work, cannot be updated
         # st.session_state['content'] = st.text_area('LaTeX file', value=st.session_state.get('rawdata'), height=800, key='text_area')
-        # st.session_state['content'] = st_ace(value=st.session_state.get('rawdata'), height=800, language='latex', theme='monokai', key='ace', auto_update=True)
-        st.code(body=st.session_state.get('rawdata'), language='latex')
-        st.session_state['content'] = st.session_state.get('rawdata')
+        # st.session_state['content'] = st_ace(value=st.session_state.get('texdata'), height=800, language='latex', theme='monokai', key='ace', auto_update=True)
     with col2:
         st.subheader('Preview the generated PDF file')
         if st.button('Generate PDF file from LaTeX'):
-            # st.info(len(st.session_state['rawdata']))
-            if st.session_state.get('content') is not None:
-                document = latex.make_doc_from_tex(default_filepath=tmpdirname.name, tex=st.session_state.get('content'))
-                # st.info(len(document.dumps()))
-                latex.generate_pdf_file(doc=document, filepath='output')
-
-
-
-        # # get uploaded file
-        # uploaded_file = st.file_uploader('Upload your LaTeX file', type=['tex'])
-        # if uploaded_file is not None:
-        #     # store file in temp dir
-        #     tmpfile = store_file_in_tempdir(tmpdirname, uploaded_file)
-        #     # delete all files with same stem
-        #     delete_files_from_tempdir_with_same_stem(tmpdirname, tmpfile)
-        #     # check if file with same name and hash already exists in tempdir
-        #     if check_if_file_with_same_name_and_hash_exists(tmpdirname, tmpfile.name, hash(tmpfile)):
-        #         st.warning('File with same name and hash already exists in tempdir')
-        #     else:
-        #         # convert file to pdf
-        #         convert_tex_to_pdf(tmpfile)
-        #         # get pdf file
-        #         pdf_file = Path(tmpfile.stem + '.pdf')
-        #         # show pdf
-        #         if pdf_file.exists():
-        #             file_bytes = get_bytes_from_file(pdf_file)
-        #             base64_pdf = get_base64_encoded_bytes(file_bytes)
-        #             show_pdf_base64(base64_pdf)
-        #         else:
-        #             st.error('PDF file does not exist')
-        # else:
-        #     st.warning('Please upload a LaTeX file')
+            if st.session_state.get('texdata') is not None:
+                filepath, exception, stdout = convert_tex_to_pdf_native(st.session_state['filename'], st.session_state['tempfiledir'])
+                if exception is None:
+                    if filepath is not None:
+                        st.session_state['pdffilepath'] = filepath
+                        st.session_state['pdfbytes'] = get_bytes_from_file(st.session_state.pdffilepath)
+                        st.session_state['pdfbase64'] = get_base64_encoded_bytes(st.session_state.pdfbytes)
+                        st.session_state['pdfhash'] = hash((filepath.name, filepath.stat().st_size))
+                        st.success(f'PDF file generated successfully: {st.session_state.pdffilepath.name}')
+                        show_pdf_base64(st.session_state.pdfbase64)
+                        st.download_button(label='Download PDF file',
+                            data=st.session_state.pdfbytes,
+                            file_name=st.session_state.pdffilepath.name,
+                            mime='application/octet-stream',
+                            key='download_button')
+                    else:
+                        st.error('PDF file not generated')
+                else:
+                    st.error(f'{exception}; Error log see below')
+                    st.code(body=stdout, language='log')
