@@ -259,10 +259,11 @@ if __name__ == "__main__":
     with col1:
         filename = st.session_state.get('filename', '')
         st.subheader(f'Preview the LaTeX file "{filename}"')
-        st.code(body=st.session_state.get('texdata'), language='latex')
-        # FIXME: Ace Editor does not work, cannot be updated
-        # st.session_state['content'] = st.text_area('LaTeX file', value=st.session_state.get('rawdata'), height=800, key='text_area')
-        # st.session_state['content'] = st_ace(value=st.session_state.get('texdata'), height=800, language='latex', theme='monokai', key='ace', auto_update=True)
+        if st.session_state.get('texdata') is not None:
+            st.code(body=st.session_state.get('texdata'), language='latex')
+            # FIXME: Ace Editor does not work, cannot be updated
+            # st.session_state['content'] = st.text_area('LaTeX file', value=st.session_state.get('rawdata'), height=800, key='text_area')
+            # st.session_state['content'] = st_ace(value=st.session_state.get('texdata'), height=800, language='latex', theme='monokai', key='ace', auto_update=True)
     with col2:
         st.subheader('Preview the generated PDF file')
         if st.button('Generate PDF file from LaTeX'):
