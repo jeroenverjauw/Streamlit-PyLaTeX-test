@@ -257,9 +257,11 @@ if __name__ == "__main__":
     st.markdown('''---''')
     col1, col2 = st.columns([1,1], gap='medium')
     with col1:
-        filename = st.session_state.get('filename', '')
-        st.subheader(f'Preview the LaTeX file "{filename}"')
-        if st.session_state.get('texdata') is not None:
+        if st.session_state.get('filename'):
+            st.subheader(f'''Preview the LaTeX file "{st.session_state.get('filename')}"''')
+        else:
+            st.subheader('Preview the LaTeX file')
+        if st.session_state.get('texdata'):
             st.code(body=st.session_state.get('texdata'), language='latex')
             # FIXME: Ace Editor does not work, cannot be updated
             # st.session_state['content'] = st.text_area('LaTeX file', value=st.session_state.get('rawdata'), height=800, key='text_area')
