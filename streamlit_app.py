@@ -6,6 +6,9 @@ import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from subprocess import run, PIPE
+import streamlit as st
+import matplotlib.pyplot as plt
+from io import BytesIO
 # from zipfile import ZipFile
 
 import streamlit as st
@@ -289,3 +292,18 @@ if __name__ == "__main__":
                 else:
                     st.error(f'{exception}; Error log see below')
                     st.code(body=stdout, language='log')
+
+    st.markdown('''---''')
+    latex_code = st.text_area("Enter LaTeX code (no $ signs needed)", "E = mc^2")
+
+    dpi = st.slider("DPI for image export", min_value=50, max_value=600, value=150)
+    image_format = st.radio("Select image format", ["PNG", "SVG"])
+
+    st.latex(fr'''{latex_code}''')
+
+    
+
+    fig, ax = plt.subplots(figsize=(0.01, 0.01))
+    fig.patch.set_alpha(0.0)
+    ax.axis("off")
+

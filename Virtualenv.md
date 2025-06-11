@@ -6,6 +6,7 @@ pip install --upgrade virtualenv
 python -m venv venv
 venv\Scripts\activate.bat
 python -m pip install --upgrade pip
+python -m pip install matplotlib
 pip install --upgrade -r requirements-dev.txt
 pip install --upgrade -r requirements.txt
 # ......
