@@ -308,7 +308,7 @@ if __name__ == "__main__":
     ax.axis("off")
 
     ax.text(0.5, 0.5, latex_code, fontsize=20, ha='center', va='center')
-    plt.show()
+    st.pyplot(fig)
 
     buf = BytesIO()
 
