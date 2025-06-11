@@ -301,9 +301,29 @@ if __name__ == "__main__":
 
     st.latex(fr'''{latex_code}''')
 
-    
+    plt.rcParams['text.usetex'] = True
 
     fig, ax = plt.subplots(figsize=(0.01, 0.01))
     fig.patch.set_alpha(0.0)
     ax.axis("off")
 
+    ax.text(0.5, 0.5, latex_code, fontsize=20, ha='center', va='center')
+
+    # Set format and dpi
+    if image_format == "PNG":
+        fig.savefig(buf, format="png", dpi=dpi, bbox_inches='tight', pad_inches=0.1, transparent=True)
+        mime = "image/png"
+        ext = "png"
+    else:
+        fig.savefig(buf, format="svg", bbox_inches='tight', pad_inches=0.1, transparent=True)
+        mime = "image/svg+xml"
+        ext = "svg"
+
+    buf.seek(0)
+
+    st.download_button(
+        label=f"📥 Download {image_format}",
+        data=buf,
+        file_name=f"latex_output.{ext}",
+        mime=mime
+    )
