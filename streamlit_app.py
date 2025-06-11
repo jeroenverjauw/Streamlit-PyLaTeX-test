@@ -309,6 +309,8 @@ if __name__ == "__main__":
 
     ax.text(0.5, 0.5, latex_code, fontsize=20, ha='center', va='center')
 
+    buf = BytesIO()
+
     # Set format and dpi
     if image_format == "PNG":
         fig.savefig(buf, format="png", dpi=dpi, bbox_inches='tight', pad_inches=0.1, transparent=True)
