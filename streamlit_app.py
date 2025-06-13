@@ -235,63 +235,63 @@ if __name__ == "__main__":
     if st.session_state.get('texdata') is None:
         st.session_state['texdata'] = ''
     cleanup_tempdir()  # cleanup temp dir from previous user sessions
-    # tmpdirname = make_tempdir()  # make temp dir for each user session
-    # if st.session_state.get('tempfiledir') is None:
-    #     st.session_state['tempfiledir'] = tmpdirname
-    # show_sidebar()
+    tmpdirname = make_tempdir()  # make temp dir for each user session
+    if st.session_state.get('tempfiledir') is None:
+        st.session_state['tempfiledir'] = tmpdirname
+    show_sidebar()
     st.title('LaTeX to PDF Converter 📄')
-    # hcol1, hcol2 = st.columns([1,1], gap='large')
-    # with hcol1:
-    #     st.file_uploader('Upload your own LaTeX file', type=['tex'], on_change=new_file_uploaded, key='upload')
-    # with hcol2:
-    #     if st.button('Generate example LaTex file with pylatex', key='example'):
-    #         document = latex.make_doc()
-    #         st.session_state['texdata'] = latex.get_tex(document)
-    #         st.session_state['filename'] = 'example.tex'
-    #         store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
-    #     if st.button('Load "sample1.tex" LaTex file', key='sample1'):
-    #         st.session_state['texdata'] = get_bytes_from_file(Path('samples').joinpath('sample1.tex')).decode('utf-8')
-    #         st.session_state['filename'] = 'sample1.tex'
-    #         store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
-    #     if st.button('Load "sample2.tex" LaTex file', key='sample2'):
-    #         st.session_state['texdata'] = get_bytes_from_file(Path('samples').joinpath('sample2.tex')).decode('utf-8')
-    #         st.session_state['filename'] = 'sample2.tex'
-    #         store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
-    # st.markdown('''---''')
-    # col1, col2 = st.columns([1,1], gap='large')
-    # with col1:
-    #     if st.session_state.get('filename'):
-    #         st.subheader(f'''Preview the LaTeX file "{st.session_state.get('filename')}"''')
-    #     else:
-    #         st.subheader('Preview the LaTeX file')
-    #     if st.session_state.get('texdata'):
-    #         st.code(body=st.session_state.get('texdata'), language='latex')
-    #         # FIXME: Ace Editor does not work, cannot be updated
-    #         # st.session_state['content'] = st.text_area('LaTeX file', value=st.session_state.get('rawdata'), height=800, key='text_area')
-    #         # st.session_state['content'] = st_ace(value=st.session_state.get('texdata'), height=800, language='latex', theme='monokai', key='ace', auto_update=True)
-    # with col2:
-    #     st.subheader('Preview the generated PDF file')
-    #     if st.button('Generate PDF file from LaTeX'):
-    #         if st.session_state.get('texdata') is not None:
-    #             filepath, exception, stdout = convert_tex_to_pdf_native(st.session_state['filename'], st.session_state['tempfiledir'])
-    #             if exception is None:
-    #                 if filepath is not None:
-    #                     st.session_state['pdffilepath'] = filepath
-    #                     st.session_state['pdfbytes'] = get_bytes_from_file(st.session_state.pdffilepath)
-    #                     st.session_state['pdfbase64'] = get_base64_encoded_bytes(st.session_state.pdfbytes)
-    #                     st.session_state['pdfhash'] = hash((filepath.name, filepath.stat().st_size))
-    #                     st.success(f'PDF file generated successfully: {st.session_state.pdffilepath.name}')
-    #                     show_pdf_base64(st.session_state.pdfbase64)
-    #                     st.download_button(label='Download PDF file',
-    #                         data=st.session_state.pdfbytes,
-    #                         file_name=st.session_state.pdffilepath.name,
-    #                         mime='application/octet-stream',
-    #                         key='download_button')
-    #                 else:
-    #                     st.error('PDF file not generated')
-    #             else:
-    #                 st.error(f'{exception}; Error log see below')
-    #                 st.code(body=stdout, language='log')
+    hcol1, hcol2 = st.columns([1,1], gap='large')
+    with hcol1:
+        st.file_uploader('Upload your own LaTeX file', type=['tex'], on_change=new_file_uploaded, key='upload')
+    with hcol2:
+        if st.button('Generate example LaTex file with pylatex', key='example'):
+            document = latex.make_doc()
+            st.session_state['texdata'] = latex.get_tex(document)
+            st.session_state['filename'] = 'example.tex'
+            store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
+        if st.button('Load "sample1.tex" LaTex file', key='sample1'):
+            st.session_state['texdata'] = get_bytes_from_file(Path('samples').joinpath('sample1.tex')).decode('utf-8')
+            st.session_state['filename'] = 'sample1.tex'
+            store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
+        if st.button('Load "sample2.tex" LaTex file', key='sample2'):
+            st.session_state['texdata'] = get_bytes_from_file(Path('samples').joinpath('sample2.tex')).decode('utf-8')
+            st.session_state['filename'] = 'sample2.tex'
+            store_file_in_tempdir(st.session_state['tempfiledir'], st.session_state['filename'], st.session_state['texdata'])
+    st.markdown('''---''')
+    col1, col2 = st.columns([1,1], gap='large')
+    with col1:
+        if st.session_state.get('filename'):
+            st.subheader(f'''Preview the LaTeX file "{st.session_state.get('filename')}"''')
+        else:
+            st.subheader('Preview the LaTeX file')
+        if st.session_state.get('texdata'):
+            st.code(body=st.session_state.get('texdata'), language='latex')
+            # FIXME: Ace Editor does not work, cannot be updated
+            # st.session_state['content'] = st.text_area('LaTeX file', value=st.session_state.get('rawdata'), height=800, key='text_area')
+            # st.session_state['content'] = st_ace(value=st.session_state.get('texdata'), height=800, language='latex', theme='monokai', key='ace', auto_update=True)
+    with col2:
+        st.subheader('Preview the generated PDF file')
+        if st.button('Generate PDF file from LaTeX'):
+            if st.session_state.get('texdata') is not None:
+                filepath, exception, stdout = convert_tex_to_pdf_native(st.session_state['filename'], st.session_state['tempfiledir'])
+                if exception is None:
+                    if filepath is not None:
+                        st.session_state['pdffilepath'] = filepath
+                        st.session_state['pdfbytes'] = get_bytes_from_file(st.session_state.pdffilepath)
+                        st.session_state['pdfbase64'] = get_base64_encoded_bytes(st.session_state.pdfbytes)
+                        st.session_state['pdfhash'] = hash((filepath.name, filepath.stat().st_size))
+                        st.success(f'PDF file generated successfully: {st.session_state.pdffilepath.name}')
+                        show_pdf_base64(st.session_state.pdfbase64)
+                        st.download_button(label='Download PDF file',
+                            data=st.session_state.pdfbytes,
+                            file_name=st.session_state.pdffilepath.name,
+                            mime='application/octet-stream',
+                            key='download_button')
+                    else:
+                        st.error('PDF file not generated')
+                else:
+                    st.error(f'{exception}; Error log see below')
+                    st.code(body=stdout, language='log')
 
     st.markdown('''---''')
     latex_code = st.text_area("Enter LaTeX code (no $ signs needed)", "E = mc^2")
